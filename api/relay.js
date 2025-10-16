@@ -1,3 +1,5 @@
+import https from 'https';
+
 export default async function handler(req, res) {
   // Activer CORS - IMPORTANT pour les requêtes depuis le navigateur
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -38,9 +40,9 @@ export default async function handler(req, res) {
 
     console.log('Envoi à Overlays.uno:', JSON.stringify(payload));
 
-    // Utiliser https natif de Node.js au lieu de fetch
-    const https = require('https');
+    // Utiliser https natif de Node.js
     const url = new URL(OVERLAY_API_URL);
+    const payloadString = JSON.stringify(payload);
     
     const options = {
       hostname: url.hostname,
@@ -48,61 +50,16 @@ export default async function handler(req, res) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(JSON.stringify(payload))
+        'Content-Length': Buffer.byteLength(payloadString)
       }
     };
 
     const overlayResponse = await new Promise((resolve, reject) => {
-      const req = https.request(options, (res) => {
+      const request = https.request(options, (response) => {
         let data = '';
         
-        res.on('data', (chunk) => {
+        response.on('data', (chunk) => {
           data += chunk;
         });
         
-        res.on('end', () => {
-          try {
-            resolve({
-              status: res.statusCode,
-              data: JSON.parse(data)
-            });
-          } catch (e) {
-            resolve({
-              status: res.statusCode,
-              data: data
-            });
-          }
-        });
-      });
-      
-      req.on('error', (error) => {
-        reject(error);
-      });
-      
-      req.write(JSON.stringify(payload));
-      req.end();
-    });
-
-    console.log('Réponse Overlays.uno:', overlayResponse);
-
-    if (overlayResponse.status !== 200) {
-      return res.status(overlayResponse.status).json({
-        error: `Overlays.uno error: ${overlayResponse.status}`,
-        details: overlayResponse.data,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      command: command,
-      response: overlayResponse.data,
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    return res.status(500).json({
-      error: 'Server error',
-      message: error.message,
-      stack: error.stack
-    });
-  }
-}
+        response.on('end', () => {
