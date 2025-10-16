@@ -36,38 +36,73 @@ export default async function handler(req, res) {
     if (fieldId) payload.fieldId = fieldId;
     if (value) payload.value = value;
 
-    console.log('Envoi à Overlays.uno:', payload);
+    console.log('Envoi à Overlays.uno:', JSON.stringify(payload));
 
-    // Relayer vers Overlays.uno API
-    const response = await fetch(OVERLAY_API_URL, {
+    // Utiliser https natif de Node.js au lieu de fetch
+    const https = require('https');
+    const url = new URL(OVERLAY_API_URL);
+    
+    const options = {
+      hostname: url.hostname,
+      path: url.pathname,
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+        'Content-Length': Buffer.byteLength(JSON.stringify(payload))
+      }
+    };
+
+    const overlayResponse = await new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            resolve({
+              status: res.statusCode,
+              data: JSON.parse(data)
+            });
+          } catch (e) {
+            resolve({
+              status: res.statusCode,
+              data: data
+            });
+          }
+        });
+      });
+      
+      req.on('error', (error) => {
+        reject(error);
+      });
+      
+      req.write(JSON.stringify(payload));
+      req.end();
     });
 
-    const data = await response.json();
+    console.log('Réponse Overlays.uno:', overlayResponse);
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: `Overlays.uno error: ${response.status}`,
-        details: data,
+    if (overlayResponse.status !== 200) {
+      return res.status(overlayResponse.status).json({
+        error: `Overlays.uno error: ${overlayResponse.status}`,
+        details: overlayResponse.data,
       });
     }
-
-    console.log('Réponse Overlays.uno:', data);
 
     return res.status(200).json({
       success: true,
       command: command,
-      response: data,
+      response: overlayResponse.data,
     });
   } catch (error) {
     console.error('Error:', error);
     return res.status(500).json({
       error: 'Server error',
       message: error.message,
+      stack: error.stack
     });
   }
 }
