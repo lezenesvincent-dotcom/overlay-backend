@@ -63,3 +63,48 @@ export default async function handler(req, res) {
         });
         
         response.on('end', () => {
+          try {
+            resolve({
+              status: response.statusCode,
+              data: JSON.parse(data)
+            });
+          } catch (e) {
+            resolve({
+              status: response.statusCode,
+              data: data
+            });
+          }
+        });
+      });
+      
+      request.on('error', (error) => {
+        reject(error);
+      });
+      
+      request.write(payloadString);
+      request.end();
+    });
+
+    console.log('Réponse Overlays.uno:', overlayResponse);
+
+    if (overlayResponse.status !== 200) {
+      return res.status(overlayResponse.status).json({
+        error: `Overlays.uno error: ${overlayResponse.status}`,
+        details: overlayResponse.data,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      command: command,
+      response: overlayResponse.data,
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({
+      error: 'Server error',
+      message: error.message,
+      stack: error.stack
+    });
+  }
+}
