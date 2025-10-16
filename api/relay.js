@@ -50,7 +50,9 @@ export default async function handler(req, res) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payloadString)
+        'Content-Length': Buffer.byteLength(payloadString),
+        'X-Api-Key': TEMPLATE_ID,
+        'Authorization': `Bearer ${TEMPLATE_ID}`
       }
     };
 
