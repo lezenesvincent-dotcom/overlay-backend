@@ -1,0 +1,9 @@
+{
+  "name": "overlay-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Build'"
+  }
+}
