@@ -1,4 +1,4 @@
-import https from 'https';
+
 
 export default async function handler(req, res) {
   // Activer CORS - IMPORTANT pour les requêtes depuis le navigateur
